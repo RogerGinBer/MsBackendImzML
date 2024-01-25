@@ -1,0 +1,24 @@
+Package: MsBackendImzML
+Type: Package
+Title: What the Package Does in One 'Title Case' Line
+Version: 0.1.0
+Date: 2024-01-24
+Encoding: UTF-8
+Author: Your Name
+Maintainer: Your Name <your@email.com>
+Description: One paragraph description of what the package does as one or more full sentences.
+License: GPL (>= 2)
+Imports: 
+  Rcpp (>= 1.0.11),
+  Spectra,
+  S4Vectors,
+  MsCoreUtils
+SystemRequirements: C++11, fftw3 (>= 3.3.5)
+LinkingTo: Rcpp
+RoxygenNote: 7.3.0
+Collate: 
+    'hidden_aliases.R'
+    'MsBackendImzML-functions.R'
+    'MsBackendImzML.R'
+    'RcppExports.R'
+    'utils.R'
