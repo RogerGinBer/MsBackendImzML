@@ -1,19 +1,26 @@
 Package: MsBackendImzML
 Type: Package
-Title: What the Package Does in One 'Title Case' Line
+Title: Mass Spectrometry Backend for Reading Imaging-MS imzML Files
 Version: 0.1.0
 Date: 2024-01-24
 Encoding: UTF-8
-Author: Your Name
-Maintainer: Your Name <your@email.com>
-Description: One paragraph description of what the package does as one or more full sentences.
-License: GPL (>= 2)
+Authors@R: c(
+  person(given = "Roger", family = "Gine Bertomeu",
+    email = "roger.gine@urv.cat", role = c("aut", "cre"),
+    comment = c(ORCID = "0000-0003-0288-9619")),
+  person("Pere", "Rafols", email="pere.rafols@urv.cat",
+    role=c("aut"))
+  )
+Description: Implements an MsBackend for the Spectra package using a C++ imzML parser
+  and ibd binary stream reader. Methods defined in this package are supposed to extend the Spectra
+  Bioconductor package. 
+License: GPL (>= 3)
+Depends: R (>= 4.1), methods, Spectra (>= 1.5.8)
 Imports: 
   Rcpp (>= 1.0.11),
-  Spectra,
   S4Vectors,
   MsCoreUtils
-SystemRequirements: C++11, fftw3 (>= 3.3.5)
+SystemRequirements: C++11
 LinkingTo: Rcpp
 RoxygenNote: 7.3.0
 Collate: 
@@ -22,3 +29,6 @@ Collate:
     'MsBackendImzML.R'
     'RcppExports.R'
     'utils.R'
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

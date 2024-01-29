@@ -61,6 +61,7 @@ setMethod("show", "MsBackendImzML", function(object) {
 #' @importClassesFrom IRanges NumericList
 #'
 #' @importFrom IRanges NumericList
+#' @importFrom MsCoreUtils rbindFill
 #'
 #' @rdname MsBackend
 setMethod("backendInitialize", signature = "MsBackendImzML",
@@ -76,10 +77,15 @@ setMethod("backendInitialize", signature = "MsBackendImzML",
             if (length(msg))
               stop(msg)
             
-            data <- do.call(rbind, lapply(files, .parse_imzml))
-            
+            data <- do.call(rbindFill, lapply(files, .parse_imzml))
             object@spectraData <- data
-            #object@peaksVariables <- peaksVariables
+            
+            if("imLength" %in% colnames(data)){
+              object@peaksVariables <- c("mz", "intensity", "inv_ion_mobility")
+            } else {
+              object@peaksVariables <- c("mz", "intensity")
+            }
+            
             validObject(object)     
             object
           })
@@ -104,17 +110,17 @@ setMethod("acquisitionNum", "MsBackendImzML", function(object) {
 
 #' @rdname hidden_aliases
 setMethod("peaksData", "MsBackendImzML",
-          function(object, columns = c("mz", "intensity")) {
+          function(object, columns = peaksVariables(object)) {
             na <- columns[!columns %in% peaksVariables(object)]
             if (length(na))
               stop("Peaks variable \"", na, "\" not available.")
             lst <- lapply(columns, function(z) {
-              if (z %in% c("mz", "intensity"))
+              if (z %in% c("mz", "intensity", "inv_ion_mobility"))
                 do.call(z, list(object))
               else object@spectraData[, z]
             })
             names(lst) <- columns
-            if (all(columns %in% c("mz", "intensity")))
+            if (all(columns %in% c("mz", "intensity", "inv_ion_mobility")))
               fun <- cbind
             else fun <- cbind.data.frame
             do.call(mapply, c(list(FUN = fun, SIMPLIFY = FALSE,
@@ -191,8 +197,8 @@ setMethod("intensity", "MsBackendImzML", function(object) {
          ibdFname = .get_column(object@spectraData, "dataStorage"),
          N = .get_column(object@spectraData, "intLength"),
          offset = .get_column(object@spectraData, "intOffset"),
-         MoreArgs = list(NPixels = 1, read_mz = FALSE, continuous = FALSE,
-                         dataTypeString = "double"),
+         dataTypeString = .get_column(object@spectraData, "dataTypeInt"),
+         MoreArgs = list(NPixels = 1, read_mz = FALSE, continuous = FALSE),
          SIMPLIFY = FALSE)
 })
 
@@ -285,8 +291,18 @@ setMethod("mz", "MsBackendImzML", function(object) {
          ibdFname = .get_column(object@spectraData, "dataStorage"),
          N = .get_column(object@spectraData, "mzLength"),
          offset = .get_column(object@spectraData, "mzOffset"),
-         MoreArgs = list(NPixels = 1, read_mz = FALSE, continuous = FALSE,
-                         dataTypeString = "double"),
+         dataTypeString = .get_column(object@spectraData, "dataTypeMz"),
+         MoreArgs = list(NPixels = 1, read_mz = FALSE, continuous = FALSE),
+         SIMPLIFY = FALSE)
+})
+
+setMethod("inv_ion_mobility", "MsBackendImzML", function(object) {
+  mapply(imzMLBinReadGeneric,
+         ibdFname = .get_column(object@spectraData, "dataStorage"),
+         N = .get_column(object@spectraData, "imLength"),
+         offset = .get_column(object@spectraData, "imOffset"),
+         dataTypeString = .get_column(object@spectraData, "dataTypeIm"),
+         MoreArgs = list(NPixels = 1, read_mz = FALSE, continuous = FALSE),
          SIMPLIFY = FALSE)
 })
 

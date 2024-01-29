@@ -199,7 +199,7 @@ MsBackendImzML <- function() {
   } else rep(TRUE, length(object))
 }
 
-#' Helper function to combine backends that base on [MsBackendDataFrame()].
+#' Helper function to combine backends that base on [MsBackendImzML()].
 #'
 #' @param objects `list` of `MsBackend` objects.
 #'
@@ -231,9 +231,9 @@ MsBackendImzML <- function() {
 
 #' @description
 #'
-#' Subset the `DataFrame` of a `MsBackendDataFrame` *by rows*.
+#' Subset the `DataFrame` of a `MsBackendImzML` *by rows*.
 #'
-#' @param x `MsBackendDataFrame
+#' @param x `MsBackendImzML
 #'
 #' @param i `integer`, `character` or `logical`.
 #'
@@ -259,21 +259,50 @@ MsBackendImzML <- function() {
 #' @noRd
 .parse_imzml <- function(fl){
   lst <- CimzMLParse(fl)
-  DataFrame(
-    dataOrigin = rep(fl, nrow(lst$run_data)),
-    dataStorage = rep(gsub("imzML$", "ibd", fl), nrow(lst$run_data)),
-    xPixel = lst$run_data$x,
-    yPixel = lst$run_data$y,
-    msLevel = rep(1L, nrow(lst$run_data)), #TODO: Implement msLevel in imzML parser
-    mzLength = lst$run_data$mzLength,
-    mzOffset = lst$run_data$mzOffset,
-    intLength = lst$run_data$intLength,
-    intOffset = lst$run_data$intOffset,
-    acquisitionNum = seq_len(nrow(lst$run_data)),
-    centroided = !lst$continuous_mode,  # Not continuous (profile) = centroided
-    compressionMz = lst$compression_mz,
-    compressionInt = lst$compression_int,
-    dataTypeMz = rep(lst$mz_dataType, nrow(lst$run_data)),
-    dataTypeInt = rep(lst$int_dataType, nrow(lst$run_data)),
-  )
+  
+  if (length(lst[["error"]])){
+    stop(lst[["error"]]) # Capture error message from C++ parser
+  }
+  
+  if (lst$mobility_present){
+    DataFrame(
+      dataOrigin = rep(fl, nrow(lst$run_data)),
+      dataStorage = rep(gsub("imzML$", "ibd", fl), nrow(lst$run_data)),
+      xPixel = lst$run_data$x,
+      yPixel = lst$run_data$y,
+      msLevel = rep(1L, nrow(lst$run_data)), #TODO: Implement msLevel in imzML parser
+      mzLength = lst$run_data$mzLength,
+      mzOffset = lst$run_data$mzOffset,
+      intLength = lst$run_data$intLength,
+      intOffset = lst$run_data$intOffset,
+      imLength = lst$run_data$imLength,
+      imOffset = lst$run_data$imOffset,
+      acquisitionNum = seq_len(nrow(lst$run_data)),
+      centroided = !lst$continuous_mode,  # Not continuous (profile) = centroided
+      compressionMz = lst$compression_mz,
+      compressionInt = lst$compression_int,
+      compressionIm = lst$compression_im,
+      dataTypeMz = rep(lst$mz_dataType, nrow(lst$run_data)),
+      dataTypeInt = rep(lst$int_dataType, nrow(lst$run_data)),
+      dataTypeIm = rep(lst$im_dataType, nrow(lst$run_data))
+    )
+  } else {
+    DataFrame(
+      dataOrigin = rep(fl, nrow(lst$run_data)),
+      dataStorage = rep(gsub("imzML$", "ibd", fl), nrow(lst$run_data)),
+      xPixel = lst$run_data$x,
+      yPixel = lst$run_data$y,
+      msLevel = rep(1L, nrow(lst$run_data)), #TODO: Implement msLevel in imzML parser
+      mzLength = lst$run_data$mzLength,
+      mzOffset = lst$run_data$mzOffset,
+      intLength = lst$run_data$intLength,
+      intOffset = lst$run_data$intOffset,
+      acquisitionNum = seq_len(nrow(lst$run_data)),
+      centroided = !lst$continuous_mode,  # Not continuous (profile) = centroided
+      compressionMz = lst$compression_mz,
+      compressionInt = lst$compression_int,
+      dataTypeMz = rep(lst$mz_dataType, nrow(lst$run_data)),
+      dataTypeInt = rep(lst$int_dataType, nrow(lst$run_data))
+    ) 
+  }
 }

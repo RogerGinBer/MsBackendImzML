@@ -78,8 +78,11 @@ List CimzMLParse( String xml_path )
   bool bContinuous;
   bool bCompressionMz = true; //an error will be raised if this reamains true by the end of xml parsing
   bool bCompressionInt = true; //an error will be raised if this reamains true by the end of xml parsing
+  bool bCompressionIm = true;
+  bool ionMobility_present = false;
   String sMzDataType = "";
   String sIntDataType = "";
+  String sImDataType = "";
   double dPixelSize = 0.0;
   bool bDataIsAPeakListInRMSIFormat = false;
   
@@ -171,7 +174,11 @@ List CimzMLParse( String xml_path )
   for (xml_node refParamGrp = refParamGrpLst.child("referenceableParamGroup"); refParamGrp; refParamGrp = refParamGrp.next_sibling("referenceableParamGroup"))
   {
     id = refParamGrp.attribute("id").value();
-    if( id == "mzArray" || id == "intensityArray" || id == "intensities" )
+    if(id == "mobilityArray")
+    {
+      ionMobility_present = true;
+    }
+    if( id == "mzArray" || id == "intensityArray" || id == "intensities" || id == "mobilityArray")
     {
       for (xml_node cvParam = refParamGrp.child("cvParam"); cvParam; cvParam = cvParam.next_sibling("cvParam"))
       {
@@ -185,6 +192,10 @@ List CimzMLParse( String xml_path )
         if( accession == "MS:1000576" &&  (id == "intensityArray" || id == "intensities") )
         {
           bCompressionInt = false;
+        }
+        if( accession == "MS:1000576" &&  id == "mobilityArray")
+        {
+          bCompressionIm = false;
         }
         
         //Check if mass is in valid units
@@ -219,6 +230,10 @@ List CimzMLParse( String xml_path )
         {
           sIntDataType = "int";
         }
+        if(accession == "IMS:1000141" &&  id == "mobilityArray")
+        {
+          sImDataType = "int";
+        }
         
         //64 bits integer data array
         if(accession == "IMS:1000142" &&  id == "mzArray")
@@ -228,6 +243,10 @@ List CimzMLParse( String xml_path )
         if(accession == "IMS:1000142" && (id == "intensityArray" || id == "intensities"))
         {
           sIntDataType = "long";
+        }
+        if(accession == "IMS:1000142" &&  id == "mobilityArray")
+        {
+          sImDataType = "long";
         }
         
         //32 bits float data array
@@ -239,6 +258,10 @@ List CimzMLParse( String xml_path )
         {
           sIntDataType = "float";
         }
+        if(accession == "MS:1000521" &&  id == "mobilityArray")
+        {
+          sImDataType = "float";
+        }
       
         //64 bits float data array
         if(accession == "MS:1000523" &&  id == "mzArray")
@@ -248,6 +271,10 @@ List CimzMLParse( String xml_path )
         if(accession == "MS:1000523" &&  (id == "intensityArray" || id == "intensities"))
         {
           sIntDataType = "double";
+        }
+        if(accession == "MS:1000523" &&  id == "mobilityArray")
+        {
+          sImDataType = "double";
         }
       }
     }
@@ -265,6 +292,10 @@ List CimzMLParse( String xml_path )
   if( strcmp(sIntDataType.get_cstring(), "") == 0)
   {
     return( List::create(Named("Error") = "imzML parse error: No intensity data type found") );
+  }
+  if(ionMobility_present && strcmp(sImDataType.get_cstring(), "") == 0)
+  {
+    return( List::create(Named("Error") = "imzML parse error: No ion mobility data type found") );
   }
 
   //Get the pixel size
@@ -314,8 +345,10 @@ List CimzMLParse( String xml_path )
   NumericVector imzOffset(num_of_pixels);
   NumericVector iintLength(num_of_pixels);
   NumericVector iintOffset(num_of_pixels);
+  NumericVector iimLength(num_of_pixels);
+  NumericVector iimOffset(num_of_pixels);
   
-  //Pointers to fast acces to imzLength, imzOffset, iintLength and iintOffset
+  //Pointers to fast access to imzLength, imzOffset, iintLength and iintOffset
   NumericVector *ptr_iLength;
   NumericVector *ptr_iOffsets;
   
@@ -373,6 +406,12 @@ List CimzMLParse( String xml_path )
         ptr_iOffsets = &iintOffset;
         bArrayPtrNotSet = false;
       }
+      if(ionMobility_present && sArrayType == "mobilityArray")
+      {
+        ptr_iLength = &iimLength;
+        ptr_iOffsets = &iimOffset;
+        bArrayPtrNotSet = false;
+      }
       
       //Error handling no ptr set so no data available
       if( bArrayPtrNotSet )
@@ -408,11 +447,40 @@ List CimzMLParse( String xml_path )
     iPixel++;
   }
   
+  if(ionMobility_present)
+  {
+    return List::create(Named("UUID") = sUUID , 
+                        Named("SHA") = sSHA_Checksum,
+                        Named("MD5") = sMD5_Checksum,
+                        Named("continuous_mode")= bContinuous,
+                        Named("rMSIpeakList")=bDataIsAPeakListInRMSIFormat,
+                        Named("mobility_present")=ionMobility_present,
+                        Named("compression_mz")= bCompressionMz,
+                        Named("compression_int")= bCompressionInt,
+                        Named("compression_im")= bCompressionIm,
+                        Named("mz_dataType") = sMzDataType,
+                        Named("int_dataType") = sIntDataType,
+                        Named("im_dataType") = sImDataType,
+                        Named("pixel_size_um") = dPixelSize,
+                        Named("run_data") = DataFrame::create( 
+                              Named("x") = iPos_x,
+                              Named("y") = iPos_y, 
+                              Named("mzLength") = imzLength, 
+                              Named("mzOffset") = imzOffset, 
+                              Named("intLength") = iintLength, 
+                              Named("intOffset") = iintOffset,
+                              Named("imLength") = iimLength, 
+                              Named("imOffset") = iimOffset
+                              )
+    );
+  }
+  
   return List::create(Named("UUID") = sUUID , 
                       Named("SHA") = sSHA_Checksum,
                       Named("MD5") = sMD5_Checksum,
                       Named("continuous_mode")= bContinuous,
                       Named("rMSIpeakList")=bDataIsAPeakListInRMSIFormat,
+                      Named("mobility_present")=ionMobility_present,
                       Named("compression_mz")= bCompressionMz,
                       Named("compression_int")= bCompressionInt,
                       Named("mz_dataType") = sMzDataType,
