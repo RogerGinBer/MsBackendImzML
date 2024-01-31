@@ -1,0 +1,81 @@
+---
+title: "Handling Imaging-MS data with the MsBackendImzML"
+output:
+    BiocStyle::html_document:
+        toc_float: true   
+vignette: >
+  %\VignetteIndexEntry{MsBackendImzML}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+```{r style, echo = FALSE, results = 'asis', message=FALSE}
+BiocStyle::markdown()
+```
+
+**Package**: `r Biocpkg("MsBackendImzML")`<br />
+**Authors**: `r packageDescription("MsBackendImzML")[["Author"]] `<br />
+**Last modified:** `r file.info("MsBackendImzML.Rmd")$mtime`<br />
+**Compiled**: `r date()`
+
+```{r, echo = FALSE, message = FALSE}
+library(MsBackendImzML)
+library(BiocStyle)
+```
+
+
+# Reading the imzML files
+
+When loading the imzML files, please make sure that the corresponding ibd file
+is also present on the same folder as the imzML.
+
+```{r}
+file_path <- system.file("/extdata/test_image.imzML", package = "MsBackendImzML")
+be <- backendInitialize(MsBackendImzML(), files = file_path)
+sp <- Spectra(be)
+```
+
+As you can see, this backend has some extra `spectraVariables` in order to
+handle the pixel positions and the byte offsets corresponding to the ibd
+(imaging binary data) file:
+
+```{r}
+spectraVariables(sp)
+```
+# Exploring the data
+
+As with all `Spectra` objects, we can extract the `peaksData()` (mz, intensity and, if
+available, inv_ion_mobility). The data will then be read on-the-fly from the ibd
+file/s and loaded into R.
+
+```{r}
+pd <- peaksData(sp)
+print(head(pd[[1]], n=21))
+```
+
+
+```{r}
+plot(head(pd[[1]], n=7), type = "b", col=2)
+```
+
+As you can probably infer from the plot, this data is in profile mode: the
+MsBackendImzML does **not** make any assumptions (nor checks) about the data
+origin or whether any processing steps (smoothing, alignment,
+centroiding/peak-picking, ...) have been applied to the data. Therefore, it is
+tolerant to continuous/processed mode data as well as raw/profile/centroid data.
+
+# Session Info
+
+```{r}
+sessionInfo()
+```
+
+

@@ -25,10 +25,15 @@ LinkingTo: Rcpp
 RoxygenNote: 7.3.0
 Collate: 
     'hidden_aliases.R'
+    'AllGenerics.R'
     'MsBackendImzML-functions.R'
     'MsBackendImzML.R'
     'RcppExports.R'
     'utils.R'
 Suggests: 
-    testthat (>= 3.0.0)
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    BiocStyle (>= 2.5.19)
 Config/testthat/edition: 3
+VignetteBuilder: knitr
